@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile
+.dockerignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Laravel
+/src/node_modules
+/src/public/hot
+/src/public/storage
+/src/storage/*.key
+/src/vendor
+/src/.env
+/src/.env.*
+/src/.phpunit.result.cache
+/src/npm-debug.log
+/src/yarn-error.log
+
+# Testing
+/src/coverage
+/src/.phpunit.result.cache
+/src/phpunit.xml
+
+# Production
+/src/bootstrap/cache/*
+!/src/bootstrap/cache/.gitkeep

@@ -1,0 +1,70 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+nbproject/
+*.swp
+*.swo
+*~
+
+# Laravel
+/src/vendor/
+/src/node_modules/
+/src/public/hot
+/src/public/storage
+/src/storage/*.key
+/src/.env
+/src/.env.backup
+/src/.phpunit.result.cache
+/src/Homestead.json
+/src/Homestead.yaml
+/src/npm-debug.log
+/src/yarn-error.log
+/src/bootstrap/cache/*
+!/src/bootstrap/cache/.gitkeep
+/src/public/build/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!*.example.tfvars
+
+# Docker volumes
+/docker/mysql/data
+/docker/redis/data
+
+# Logs
+*.log
+/logs/
+
+# Coverage reports
+/coverage/
+*.coverage
+.nyc_output/
+
+# Environment files
+.env.*
+!.env.example
+!.env.testing
+
+# Certificates
+*.pem
+*.key
+*.crt
+*.csr
+/ssl/
+
+# Backup files
+*.bak
+*.backup
+*.old

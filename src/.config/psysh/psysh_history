@@ -1,0 +1,7 @@
+cache()->put('hello', 'redis', 10);
+cache()->get('hello');
+exit
+exit
+cache()->put('hello', 'redis', 10);
+cache()->get('hello');
+exit
