@@ -13,7 +13,7 @@ class LogController extends Controller
      */
     public function index(Request $request)
     {
-        Log::info('LogController index method called! hey this message edited, this is third msg');
+        Log::info('LogController index method called!');
 
 
         return response()->json([
