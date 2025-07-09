@@ -30,6 +30,12 @@ docker-compose exec app php artisan cache:clear
 docker-compose exec app php artisan migrate
 docker-compose exec app php artisan db:seed
 
+# Access container
+docker-compose exec app bash       
+
+
+
+
 
 ----------------------- REDIS-------------------------
 # install dependency 
@@ -60,5 +66,62 @@ docker-compose ps
 docker-compose exec app php artisan tinker
 cache()->put('hello', 'redis', 10);
 cache()->get('hello'); // should return "redis"
+
+
+
+-----------------------------DOCKER------------------------------------
+------------------- ID ONE CONTAINER NOT STARTED ----------------------------
+docker ps -a # to list all containers
+
+docker start <containeri_d>
+
+
+
+---------------------- GIT------------------------------------------
+Safer Approach (fetch + rebase) for developers : 
+
+git fetch origin
+git rebase origin/dev  # Resolve any conflicts as they appear
+
+git fetch (Recommended Approach)
+git fetch origin
+git merge origin/dev     # or rebase
+# or
+git rebase origin/dev
+
+# Dangerous Approach (plain pull):
+git pull origin dev  # May create merge commits automatically # Might trigger merge conflicts unexpectedly
+
+When to Use git stash:
+    When you have uncommitted changes but need to pull updates from the remote
+    When you need to quickly switch branches without committing half-done work
+    When you want to test something without your current changes interfering
+
+# You're working on a feature but need to update
+$ git stash push -m "user auth progress"
+
+# Get latest changes
+$ git pull --rebase origin main
+
+# Bring back your work
+$ git stash pop
+
+# Resolve any conflicts if they occur
+# Continue working...
+
+Advanced Stash Tips:
+List all stashes:
+git stash list
+
+Apply a specific stash without removing it:
+git stash apply stash@{n}  # where n is the stash number
+
+Create a branch from a stash:
+git stash branch new-branch-name stash@{n}
+
+Clear all stashes: (precaution)
+git stash clear
+
+
 
 
