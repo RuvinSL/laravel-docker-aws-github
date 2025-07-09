@@ -13,8 +13,8 @@ class LogController extends Controller
      */
     public function index(Request $request)
     {
-        Log::info('LogController index method called!');
-
+        Log::info('LogController index method called! hey this message edited, this is third msg');
+// this is my commend form local file
 
         return response()->json([
             'message' => 'LogController index method called successfully!', 400
