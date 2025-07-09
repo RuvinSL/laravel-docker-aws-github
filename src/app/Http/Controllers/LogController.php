@@ -26,6 +26,17 @@ class LogController extends Controller
 
     }
 
+
+public function test(){
+
+// this is just a test function
+
+}
+
+
+
+
+    
     /**
      * Show the form for creating a new resource.
      */
