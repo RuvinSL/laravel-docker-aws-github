@@ -17,7 +17,7 @@ class LogController extends Controller
 
 
         return response()->json([
-            'message' => 'LogController index method called successfully!'
+            'message' => 'LogController index method called successfully!', 400
         ]);
     }
 
