@@ -165,7 +165,7 @@ To use the access token from your Docker CLI client:
 1. Run
 docker login -u ruvinroshan
 2. At the password prompt, enter the personal access token.
-dckr_pat_UHynxAkHMXF4Xqn1zdhWP5hhLns
+
 
 
 Step 2: AWS EC2 Setup
