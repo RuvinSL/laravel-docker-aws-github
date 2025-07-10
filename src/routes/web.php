@@ -19,3 +19,19 @@ Route::get('/', function () {
 
 
 Route::get('/log', [LogController::class, 'index'])->name('log.index');
+
+
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'healthy',
+        'timestamp' => now()->toIso8601String(),
+        'environment' => config('app.env'),
+        'version' => config('app.version', '1.0.0')
+    ]);
+});
+
+
+
+
+
+

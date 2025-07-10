@@ -9,10 +9,8 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     zip \
     unzip \
-    npm
-
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+    nginx \
+    supervisor
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
@@ -24,16 +22,71 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www
 
 # Copy application files
-COPY src /var/www
+COPY ./src /var/www
 
 # Install dependencies
 RUN composer install --optimize-autoloader --no-dev
-RUN npm install && npm run build
 
-# Change ownership
-RUN chown -R www-data:www-data /var/www
+# Install and build frontend assets
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install && \
+    npm run build
 
-USER www-data
+# Copy nginx config
+COPY docker/nginx/default.conf /etc/nginx/sites-available/default
 
-EXPOSE 9000
-CMD ["php-fpm"]
+# Copy supervisor config
+COPY docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+
+# Expose port 80 for nginx
+EXPOSE 80
+
+# Start supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+
+
+
+
+# FROM php:8.2-fpm
+
+# # Install system dependencies
+# RUN apt-get update && apt-get install -y \
+#     git \
+#     curl \
+#     libpng-dev \
+#     libonig-dev \
+#     libxml2-dev \
+#     zip \
+#     unzip \
+#     npm
+
+# # Clear cache
+# RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# # Install PHP extensions
+# RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+
+# # Install Composer
+# COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# # Set working directory
+# WORKDIR /var/www
+
+# # Copy application files
+# COPY src /var/www
+
+# # Install dependencies
+# RUN composer install --optimize-autoloader --no-dev
+# RUN npm install && npm run build
+
+# # Change ownership
+# RUN chown -R www-data:www-data /var/www
+
+# USER www-data
+
+# EXPOSE 9000
+# CMD ["php-fpm"]
