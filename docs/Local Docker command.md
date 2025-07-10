@@ -122,6 +122,17 @@ git stash branch new-branch-name stash@{n}
 Clear all stashes: (precaution)
 git stash clear
 
+# Here's how to completely reset your local main branch to match the remote repository (as if you just cloned it fresh):
+git fetch origin
+git checkout main
+git reset --hard origin/main
+git clean -n
+git clean -fd
 
+
+---------------------- LARAVEL COMMAND----------------------
+
+# in case it laravel Test fails use the below command to generate .env api testing key
+php artisan key:generate --env=testing
 
 
