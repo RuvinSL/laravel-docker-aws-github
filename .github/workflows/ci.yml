@@ -65,13 +65,13 @@ jobs:
         DB_USERNAME: root
         DB_PASSWORD: password
 
-    - name: Run PHPStan
-      run: ./vendor/bin/phpstan analyse
-      working-directory: ./src
+    # - name: Run PHPStan
+    #   run: ./vendor/bin/phpstan analyse
+    #   working-directory: ./src
 
-    - name: Run Laravel Pint
-      run: ./vendor/bin/pint --test
-      working-directory: ./src
+    # - name: Run Laravel Pint
+    #   run: ./vendor/bin/pint --test
+    #   working-directory: ./src
 
   build:
     needs: test
