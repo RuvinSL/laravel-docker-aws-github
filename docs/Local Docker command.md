@@ -130,3 +130,7 @@ git clean -n
 git clean -fd
 
 
+---------------------- LARAVEL COMMAND----------------------
+
+# in case it laravel Test fails use the below command to generate .env api testing key
+php artisan key:generate --env=testing
