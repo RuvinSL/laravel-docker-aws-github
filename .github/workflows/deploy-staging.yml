@@ -3,7 +3,8 @@ name: Deploy to Staging
 on:
   push:
     branches: [ develop ]
-
+  pull_request:
+    branches: [ develop ]
 env:
   DOCKER_REGISTRY: docker.io
   IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/laravel-app
