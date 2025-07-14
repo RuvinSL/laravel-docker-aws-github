@@ -64,6 +64,7 @@ public function test_user_can_login_with_valid_credentials()
         ->post('/login', [
             'email' => $user->email,
             'password' => 'wrongpassword',
+
         ]);
 
         $response->assertSessionHasErrors('email');
