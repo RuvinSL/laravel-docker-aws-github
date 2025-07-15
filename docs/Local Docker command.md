@@ -135,14 +135,22 @@ git clean -fd
 # in case it laravel Test fails use the below command to generate .env api testing key
 php artisan key:generate --env=testing
 
-
+-------------------------------------------------------------------------------------
 In a CI/CD pipeline for Laravel, installing dependencies properly ensures that every developer—especially juniors—can pull the code and run it without hiccups. Here’s how to structure it for consistency and reliability:
------------------
 
 # This ensures everyone gets the exact same versions of packages
 docker-compose exec app composer install --no-interaction --prefer-dist --optimize-autoloader
 
 
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
 -------------------------------------------------------
+
+==================== PostgreSQL=================================
+CLI:
+docker-compose exec postgres psql -U laravel_user -d laravel_db
+
 
 
