@@ -1,6 +1,18 @@
 # # version: 'v5'
 
 services:
+  selenium:
+    image: selenium/standalone-chrome:latest
+    ports:
+      - "4444:4444"
+    environment:
+      - HUB_HOST=selenium
+    volumes:
+      - /dev/shm:/dev/shm
+    networks:
+      - laravel      
+
+
   traefik:
     image: traefik:v2.10
     container_name: traefik
@@ -38,10 +50,12 @@ services:
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
     depends_on:
       - redis
+      - selenium
     networks:
       - laravel
     environment:
       - HOST_IP=${HOST_IP}
+      - DUSK_DRIVER_URL=http://selenium:4444/wd/hub
 
 
 
@@ -59,13 +73,13 @@ services:
       - laravel
     labels:
       - "traefik.enable=true"
-      # HTTP redirect to HTTPS
-      - "traefik.http.routers.nginx-http.rule= Host(`${HOST_IP}`) || Host(`app.${HOST_IP}.nip.io`)"
+      # # HTTP redirect to HTTPS
+      - "traefik.http.routers.nginx-http.rule= Host(`${HOST_IP}`) || Host(`app.${HOST_IP}.nip.io`) || Host(`laravel.local`)"
       - "traefik.http.routers.nginx-http.entrypoints=web"
       - "traefik.http.routers.nginx-http.middlewares=redirect-to-https"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
       # HTTPS router
-      - "traefik.http.routers.nginx.rule= Host(`${HOST_IP}`) || Host(`app.${HOST_IP}.nip.io`)"
+      - "traefik.http.routers.nginx.rule= Host(`${HOST_IP}`) || Host(`app.${HOST_IP}.nip.io`) || Host(`laravel.local`)"
       - "traefik.http.routers.nginx.entrypoints=websecure"
       - "traefik.http.routers.nginx.tls.certresolver=leresolver"
       - "traefik.http.services.nginx.loadbalancer.server.port=80"
@@ -118,6 +132,8 @@ services:
       - pgdata:/var/lib/postgresql/data
     networks:
       - laravel
+    ports:
+      - "5432:5432"  
 
   pgadmin:
     image: dpage/pgadmin4

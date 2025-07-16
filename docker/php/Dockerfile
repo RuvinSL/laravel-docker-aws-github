@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     npm \
+    libicu-dev \
+    libzip-dev \
+    zip \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -24,6 +27,8 @@ RUN docker-php-ext-install \
     exif \
     pcntl \
     bcmath \
+    intl \
+    zip \
     gd
 
 # Install Composer
