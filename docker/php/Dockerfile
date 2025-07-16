@@ -29,10 +29,14 @@ RUN docker-php-ext-install \
     bcmath \
     intl \
     zip \
+    opcache \
     gd
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Copy custom Opcache config
+COPY ./docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 
 # Set working directory
 WORKDIR /var/www

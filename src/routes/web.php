@@ -13,9 +13,11 @@ use App\Http\Controllers\LogController;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::redirect('/', '/admin');
+
+// Route::get('/', function () {
+//     return view('welcome');
+// });
 
 
 Route::get('/log', [LogController::class, 'index'])->name('log.index');
