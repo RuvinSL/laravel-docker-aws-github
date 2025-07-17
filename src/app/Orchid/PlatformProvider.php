@@ -10,6 +10,9 @@ use Orchid\Platform\OrchidServiceProvider;
 use Orchid\Screen\Actions\Menu;
 use Orchid\Support\Color;
 
+//RR
+use App\Models\Product;
+
 class PlatformProvider extends OrchidServiceProvider
 {
     /**
@@ -89,6 +92,29 @@ class PlatformProvider extends OrchidServiceProvider
                 ->url('https://github.com/orchidsoftware/platform/blob/master/CHANGELOG.md')
                 ->target('_blank')
                 ->badge(fn () => Dashboard::version(), Color::DARK),
+
+// RR
+//   Menu::make('Users')
+//             ->icon('bs.people')
+//             ->route('platform.users')
+//             ->title('Management'),
+//  Menu::make('New User')
+//                 ->icon('bs.bar-chart')
+//                 ->route('platform.users'),
+
+
+
+
+
+   Menu::make('Products')
+            ->icon('bag')
+            ->route('platform.product.list')
+            ->title('Catalog')
+            ->badge(function () {
+                return Product::count();
+            }),
+
+
         ];
     }
 

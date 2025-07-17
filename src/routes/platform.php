@@ -102,3 +102,38 @@ Route::screen('/examples/charts', ExampleChartsScreen::class)->name('platform.ex
 Route::screen('/examples/cards', ExampleCardsScreen::class)->name('platform.example.cards');
 
 // Route::screen('idea', Idea::class, 'platform.screens.idea');
+
+
+// RR
+
+
+use App\Orchid\Screens\ProductListScreen;
+use App\Orchid\Screens\ProductEditScreen;
+
+// Add these routes inside the Route::screen group
+Route::screen('products', ProductListScreen::class)
+    ->name('platform.product.list')
+    ->breadcrumbs(function (Trail $trail) {
+        return $trail
+            ->parent('platform.index')
+            ->push('Products', route('platform.product.list'));
+    });
+
+Route::screen('product/{product?}', ProductEditScreen::class)
+    ->name('platform.product.edit')
+    ->breadcrumbs(function (Trail $trail, $product = null) {
+        return $trail
+            ->parent('platform.product.list')
+            ->push($product ? 'Edit Product' : 'Create Product');
+    });
+
+// use App\Orchid\Screens\UserListScreen as NewuserList;
+// Route::screen('name', NewuserList::class)
+//     ->name('platform.name');
+
+
+// Route::screen('users', NewuserList::class)
+//     ->name('platform.systems.users')
+//     ->breadcrumbs(fn (Trail $trail) => $trail
+//         ->parent('platform.index')
+//         ->push(__('Users'), route('platform.systems.users')));
