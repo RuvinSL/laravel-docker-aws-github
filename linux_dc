@@ -1,0 +1,90 @@
+#!/bin/bash
+# dc - Docker Compose wrapper that auto-detects IP
+
+# Get the script directory and project root
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$SCRIPT_DIR"
+
+# Check if scripts directory exists
+if [ -d "$PROJECT_ROOT/scripts" ]; then
+    SCRIPTS_DIR="$PROJECT_ROOT/scripts"
+elif [ -d "$PROJECT_ROOT/../scripts" ]; then
+    SCRIPTS_DIR="$PROJECT_ROOT/../scripts"
+    PROJECT_ROOT="$PROJECT_ROOT/.."
+fi
+
+# Function to get IP address based on OS
+get_ip() {
+    case "$(uname -s)" in
+        Linux*)
+            ip route get 1.1.1.1 | awk '{print $7; exit}'
+            ;;
+        Darwin*)
+            ipconfig getifaddr en0 || ipconfig getifaddr en1
+            ;;
+        CYGWIN*|MINGW32*|MSYS*|MINGW*)
+            ipconfig | grep -A 4 "Ethernet adapter" | grep "IPv4" | awk '{print $NF}'
+            ;;
+        *)
+            echo "127.0.0.1"
+            ;;
+    esac
+}
+
+# Function to setup environment
+setup_env() {
+    HOST_IP=$(get_ip)
+    
+    if [ -z "$HOST_IP" ]; then
+        echo "Warning: Could not detect IP address. Using localhost"
+        HOST_IP="127.0.0.1"
+    fi
+    
+    export HOST_IP
+    
+    # Create/update .env file
+    if [ -f "$PROJECT_ROOT/.env" ]; then
+        # Update existing .env
+        if grep -q "^HOST_IP=" "$PROJECT_ROOT/.env"; then
+            sed -i.bak "s/^HOST_IP=.*/HOST_IP=$HOST_IP/" "$PROJECT_ROOT/.env"
+            rm -f "$PROJECT_ROOT/.env.bak"
+        else
+            echo "HOST_IP=$HOST_IP" >> "$PROJECT_ROOT/.env"
+        fi
+    else
+        echo "HOST_IP=$HOST_IP" > "$PROJECT_ROOT/.env"
+    fi
+    
+    # Create traefik directory if needed
+    mkdir -p "$PROJECT_ROOT/traefik"
+    
+    echo "Using IP: $HOST_IP"
+}
+
+# Change to project root
+cd "$PROJECT_ROOT"
+
+# Check if this is an "up" command
+if [[ "$1" == "up" ]] || [[ "$1" == "up -d" ]] || [[ "$*" == *"up"* ]]; then
+    echo "Docker Compose: Auto-detecting IP address..."
+    setup_env
+    
+    # Show access URLs after starting
+    if [[ "$*" == *"-d"* ]]; then
+        docker-compose "$@"
+        echo ""
+        echo "========================================"
+        echo "Services started with IP: $HOST_IP"
+        echo "========================================"
+        echo "Access your application at:"
+        echo "  - https://app (requires hosts file)"
+        echo "  - https://$HOST_IP"
+        echo "  - https://app.$HOST_IP.nip.io"
+        echo "========================================"
+    else
+        docker-compose "$@"
+    fi
+else
+    # For all other commands, just pass through
+    docker-compose "$@"
+fi

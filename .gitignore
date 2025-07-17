@@ -20,16 +20,16 @@ nbproject/
 /src/public/hot
 /src/public/storage
 /src/storage/*.key
-/src/.env
-/src/.env.backup
+# /src/.env
+# /src/.env.backup
 /src/.phpunit.result.cache
-/src/Homestead.json
-/src/Homestead.yaml
+# /src/Homestead.json
+# /src/Homestead.yaml
 /src/npm-debug.log
 /src/yarn-error.log
 /src/bootstrap/cache/*
 !/src/bootstrap/cache/.gitkeep
-/src/public/build/
+# /src/public/build/
 
 # Terraform
 *.tfstate
@@ -40,8 +40,8 @@ nbproject/
 !*.example.tfvars
 
 # Docker volumes
-/docker/mysql/data
-/docker/redis/data
+# /docker/mysql/data
+# /docker/redis/data
 
 # Logs
 *.log
@@ -53,16 +53,16 @@ nbproject/
 .nyc_output/
 
 # Environment files
-.env.*
-!.env.example
-!.env.testing
+# .env.*
+# !.env.example
+# !.env.testing
 
 # Certificates
-*.pem
-*.key
-*.crt
-*.csr
-/ssl/
+# *.pem
+# *.key
+# *.crt
+# *.csr
+# /ssl/
 
 # Backup files
 *.bak

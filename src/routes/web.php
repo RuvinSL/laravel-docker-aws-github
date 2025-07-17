@@ -13,9 +13,29 @@ use App\Http\Controllers\LogController;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::redirect('/', '/admin');
+
+// Route::get('/', function () {
+//     return view('welcome');
+// });
 
 
 Route::get('/log', [LogController::class, 'index'])->name('log.index');
+
+
+use App\Http\Controllers\AuthController;
+
+Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
+
+
+use App\Models\User;
+
+Route::get('/newuser', function () {
+    $user = User::factory()->create([
+        'password' => bcrypt('password123'),
+    ]);
+
+
+    return $user;
+});

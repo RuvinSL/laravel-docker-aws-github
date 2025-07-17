@@ -1,0 +1,18 @@
+# traefik/dynamic.yml
+tls:
+  stores:
+    default:
+      defaultGeneratedCert:
+        resolver: default
+        domain:
+          main: "app"
+          sans:
+            - "app.local"
+            - "*.local"
+            - "192.168.101.8"
+
+  certificates:
+    - certFile: /traefik/certs/cert.pem
+      keyFile: /traefik/certs/key.pem
+      stores:
+        - default

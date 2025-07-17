@@ -1,9 +1,46 @@
-#version: '3.8'
+# # version: 'v5'
 
 services:
+  selenium:
+    image: selenium/standalone-chrome:latest
+    ports:
+      - "4444:4444"
+    environment:
+      - HUB_HOST=selenium
+    volumes:
+      - /dev/shm:/dev/shm
+    networks:
+      - laravel      
+
+
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # For LAN access, use self-signed certificates
+      - "--providers.file.filename=/traefik/dynamic.yml"
+      - "--api.insecure=true"
+      - "--log.level=DEBUG"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik:/traefik"
+    networks:
+      - laravel
+    environment:
+      - HOST_IP=${HOST_IP}
+
+
   app:
     build:
-      context: .  # Root of the project
+      context: .
       dockerfile: docker/php/Dockerfile
     container_name: laravel_app
     restart: unless-stopped
@@ -13,64 +50,575 @@ services:
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
     depends_on:
       - redis
+      - selenium
     networks:
       - laravel
+    environment:
+      - HOST_IP=${HOST_IP}
+      - DUSK_DRIVER_URL=http://selenium:4444/wd/hub
+
+
+
 
   webserver:
     image: nginx:alpine
     container_name: laravel_nginx
     restart: unless-stopped
-    ports:
-      - "8080:80"
     volumes:
       - ./src:/var/www
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
     networks:
       - laravel
+    labels:
+      - "traefik.enable=true"
+      # # HTTP redirect to HTTPS
+      - "traefik.http.routers.nginx-http.rule= Host(`${HOST_IP}`) || Host(`app.${HOST_IP}.nip.io`) || Host(`laravel.local`)"
+      - "traefik.http.routers.nginx-http.entrypoints=web"
+      - "traefik.http.routers.nginx-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      # HTTPS router
+      - "traefik.http.routers.nginx.rule= Host(`${HOST_IP}`) || Host(`app.${HOST_IP}.nip.io`) || Host(`laravel.local`)"
+      - "traefik.http.routers.nginx.entrypoints=websecure"
+      - "traefik.http.routers.nginx.tls.certresolver=leresolver"
+      - "traefik.http.services.nginx.loadbalancer.server.port=80"
+
+
 
   db:
     image: mysql:8.0
     container_name: laravel_db
     restart: unless-stopped
     environment:
-      # MYSQL_DATABASE: ${DB_DATABASE}
-      # MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      # MYSQL_PASSWORD: ${DB_PASSWORD}
-      # MYSQL_USER: ${DB_USERNAME}
       MYSQL_ROOT_PASSWORD: rootpass
       MYSQL_DATABASE: laravel
       MYSQL_USER: laraveluser
       MYSQL_PASSWORD: laravelpass
-    ports:
-      - "3306:3306"
     volumes:
       - dbdata:/var/lib/mysql
       - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
     env_file:
-      - ./src/.env 
+      - ./src/.env
     networks:
       - laravel
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    depends_on:
+      - db
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: rootpass
+    networks:
+      - laravel
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.phpmyadmin.rule=Host(`phpmyadmin.local`) || Host(`phpmyadmin.${HOST_IP}.nip.io`)"
+      - "traefik.http.routers.phpmyadmin.entrypoints=websecure"
+      - "traefik.http.routers.phpmyadmin.tls.certresolver=leresolver"
+      - "traefik.http.services.phpmyadmin.loadbalancer.server.port=80"
+
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_DB: laravel_db
+      POSTGRES_USER: laravel_user
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - laravel
+    ports:
+      - "5432:5432"  
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - laravel
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pgadmin.rule=Host(`pgadmin.localhost`) || Host(`pgadmin.${HOST_IP}.nip.io`)"
+      - "traefik.http.routers.pgadmin.entrypoints=websecure"
+      - "traefik.http.routers.pgadmin.tls.certresolver=leresolver"
+      - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
 
   redis:
     image: redis:alpine
     container_name: laravel_redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
+    volumes:
+      - redis_data:/data
     networks:
       - laravel
+    ports:
+      - "6379:6379"
+      
 
 networks:
   laravel:
     driver: bridge
 
+
 volumes:
+  pgadmin_data:
+  pgdata:
   dbdata:
-    driver: local
   redis_data:
-    driver: local  
+  letsencrypt:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ## version v4
+
+# services:
+#   traefik:
+#     image: traefik:v2.10
+#     container_name: traefik
+#     command:
+#       - "--providers.docker=true"
+#       - "--providers.docker.exposedbydefault=false"
+#       - "--entrypoints.web.address=:80"
+#       - "--entrypoints.websecure.address=:443"
+#       # For LAN access, use self-signed certificates
+#       - "--providers.file.filename=/traefik/dynamic.yml"
+#       - "--api.insecure=true"
+#       - "--log.level=DEBUG"
+#     ports:
+#       - "80:80"
+#       - "443:443"
+#       - "8080:8080"  # Traefik dashboard
+#     volumes:
+#       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+#       - "./traefik:/traefik"
+#     networks:
+#       - laravel
+
+#   app:
+#     build:
+#       context: .
+#       dockerfile: docker/php/Dockerfile
+#     container_name: laravel_app
+#     restart: unless-stopped
+#     working_dir: /var/www
+#     volumes:
+#       - ./src:/var/www
+#       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+#     depends_on:
+#       - redis
+#       - db
+#     networks:
+#       - laravel
+#     # Remove Traefik labels from PHP-FPM service
+
+#   webserver:
+#     image: nginx:alpine
+#     container_name: laravel_nginx
+#     restart: unless-stopped
+#     volumes:
+#       - ./src:/var/www
+#       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+#     depends_on:
+#       - app
+#     networks:
+#       - laravel
+#     labels:
+#       - "traefik.enable=true"
+#       # HTTP redirect to HTTPS
+#       - "traefik.http.routers.nginx-http.rule=Host(`app`) || Host(`app.local`) || Host(`192.168.101.8`)"
+#       - "traefik.http.routers.nginx-http.entrypoints=web"
+#       - "traefik.http.routers.nginx-http.middlewares=redirect-to-https"
+#       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+#       # HTTPS router
+#       - "traefik.http.routers.nginx.rule=Host(`app`) || Host(`app.local`) || Host(`192.168.101.8`)"
+#       - "traefik.http.routers.nginx.entrypoints=websecure"
+#       - "traefik.http.routers.nginx.tls=true"
+#       - "traefik.http.services.nginx.loadbalancer.server.port=80"
+
+#   db:
+#     image: mysql:8.0
+#     container_name: laravel_db
+#     restart: unless-stopped
+#     environment:
+#       MYSQL_ROOT_PASSWORD: rootpass
+#       MYSQL_DATABASE: laravel
+#       MYSQL_USER: laraveluser
+#       MYSQL_PASSWORD: laravelpass
+#     volumes:
+#       - dbdata:/var/lib/mysql
+#       - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
+#     ports:
+#       - "3306:3306"  # Expose for development
+#     networks:
+#       - laravel
+
+#   phpmyadmin:
+#     image: phpmyadmin/phpmyadmin
+#     container_name: phpmyadmin
+#     depends_on:
+#       - db
+#     environment:
+#       PMA_HOST: db
+#       MYSQL_ROOT_PASSWORD: rootpass
+#     networks:
+#       - laravel
+#     labels:
+#       - "traefik.enable=true"
+#       - "traefik.http.routers.phpmyadmin.rule=Host(`phpmyadmin.local`) || Host(`dbadmin.local`)"
+#       - "traefik.http.routers.phpmyadmin.entrypoints=websecure"
+#       - "traefik.http.routers.phpmyadmin.tls=true"
+#       - "traefik.http.services.phpmyadmin.loadbalancer.server.port=80"
+
+#   redis:
+#     image: redis:alpine
+#     container_name: laravel_redis
+#     restart: unless-stopped
+#     healthcheck:
+#       test: ["CMD", "redis-cli", "ping"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 3
+#     volumes:
+#       - redis_data:/data
+#     networks:
+#       - laravel
+#     ports:
+#       - "6379:6379"  # Expose for development
+
+# networks:
+#   laravel:
+#     driver: bridge
+
+# volumes:
+#   pgadmin_data:
+#   pgdata:
+#   dbdata:
+#   redis_data:
+#   letsencrypt:
+
+
+
+
+
+
+
+
+
+
+
+
+
+# # version: 'v3'
+
+# services:
+#   traefik:
+#     image: traefik:v2.10
+#     container_name: traefik
+#     command:
+#       - "--providers.docker=true"
+#       - "--providers.docker.exposedbydefault=false"
+#       - "--entrypoints.web.address=:80"
+#       - "--entrypoints.websecure.address=:443"
+#       - "--certificatesresolvers.leresolver.acme.tlschallenge=true"
+#       - "--certificatesresolvers.leresolver.acme.email=your-email@example.com"
+#       - "--certificatesresolvers.leresolver.acme.storage=/letsencrypt/acme.json"
+#     ports:
+#       - "80:80"
+#       - "443:443"
+#     volumes:
+#       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+#       - "./letsencrypt:/letsencrypt"
+#     networks:
+#       - laravel
+
+#   app:
+#     build:
+#       context: .
+#       dockerfile: docker/php/Dockerfile
+#     container_name: laravel_app
+#     restart: unless-stopped
+#     working_dir: /var/www
+#     volumes:
+#       - ./src:/var/www
+#       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+#     depends_on:
+#       - redis
+#     networks:
+#       - laravel
+#     labels:
+#       - "traefik.enable=true"
+#       - "traefik.http.routers.laravel.rule=Host(`laravel.localhost`)"
+#       - "traefik.http.routers.laravel.entrypoints=web"
+#       - "traefik.http.services.laravel.loadbalancer.server.port=9000"
+
+#   webserver:
+#     image: nginx:alpine
+#     container_name: laravel_nginx
+#     restart: unless-stopped
+#     volumes:
+#       - ./src:/var/www
+#       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+#     networks:
+#       - laravel
+#     labels:
+#       - "traefik.enable=true"
+#       - "traefik.http.routers.nginx.rule=Host(`app.192.168.101.8.nip.io`)"
+#       - "traefik.http.routers.nginx.entrypoints=websecure"
+#       - "traefik.http.routers.nginx.tls.certresolver=leresolver"
+#       - "traefik.http.services.nginx.loadbalancer.server.port=80"
+
+#   db:
+#     image: mysql:8.0
+#     container_name: laravel_db
+#     restart: unless-stopped
+#     environment:
+#       MYSQL_ROOT_PASSWORD: rootpass
+#       MYSQL_DATABASE: laravel
+#       MYSQL_USER: laraveluser
+#       MYSQL_PASSWORD: laravelpass
+#     volumes:
+#       - dbdata:/var/lib/mysql
+#       - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
+#     env_file:
+#       - ./src/.env
+#     networks:
+#       - laravel
+
+#   phpmyadmin:
+#     image: phpmyadmin/phpmyadmin
+#     container_name: phpmyadmin
+#     depends_on:
+#       - db
+#     environment:
+#       PMA_HOST: db
+#       MYSQL_ROOT_PASSWORD: rootpass
+#     networks:
+#       - laravel
+#     labels:
+#       - "traefik.enable=true"
+#       - "traefik.http.routers.phpmyadmin.rule=Host(`dbadmin.localhost`)"
+#       - "traefik.http.routers.phpmyadmin.entrypoints=websecure"
+#       - "traefik.http.routers.phpmyadmin.tls.certresolver=leresolver"
+#       - "traefik.http.services.phpmyadmin.loadbalancer.server.port=80"
+
+#   postgres:
+#     image: postgres:15
+#     container_name: postgres
+#     environment:
+#       POSTGRES_DB: laravel_db
+#       POSTGRES_USER: laravel_user
+#       POSTGRES_PASSWORD: secret
+#     volumes:
+#       - pgdata:/var/lib/postgresql/data
+#     networks:
+#       - laravel
+
+#   pgadmin:
+#     image: dpage/pgadmin4
+#     container_name: pgadmin
+#     environment:
+#       PGADMIN_DEFAULT_EMAIL: admin@admin.com
+#       PGADMIN_DEFAULT_PASSWORD: admin
+#     depends_on:
+#       - postgres
+#     volumes:
+#       - pgadmin_data:/var/lib/pgadmin
+#     networks:
+#       - laravel
+#     labels:
+#       - "traefik.enable=true"
+#       - "traefik.http.routers.pgadmin.rule=Host(`pgadmin.localhost`)"
+#       - "traefik.http.routers.pgadmin.entrypoints=websecure"
+#       - "traefik.http.routers.pgadmin.tls.certresolver=leresolver"
+#       - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
+
+#   redis:
+#     image: redis:alpine
+#     container_name: laravel_redis
+#     restart: unless-stopped
+#     healthcheck:
+#       test: ["CMD", "redis-cli", "ping"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 3
+#     volumes:
+#       - redis_data:/data
+#     networks:
+#       - laravel
+
+# networks:
+#   laravel:
+#     driver: bridge
+
+# volumes:
+#   pgadmin_data:
+#   pgdata:
+#   dbdata:
+#   redis_data:
+#   letsencrypt:
+
+
+
+
+
+
+
+
+# #version: 'v2'
+
+# services:
+#   app:
+#     build:
+#       context: .  # Root of the project
+#       dockerfile: docker/php/Dockerfile
+#     container_name: laravel_app
+#     restart: unless-stopped
+#     working_dir: /var/www
+#     volumes:
+#       - ./src:/var/www
+#       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+#     depends_on:
+#       - redis
+#     networks:
+#       - laravel
+
+#   webserver:
+#     image: nginx:alpine
+#     container_name: laravel_nginx
+#     restart: unless-stopped
+#     ports:
+#       - "0.0.0.0:8080:80"
+#     volumes:
+#       - ./src:/var/www
+#       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+#     networks:
+#       - laravel
+
+#   db:
+#     image: mysql:8.0
+#     container_name: laravel_db
+#     restart: unless-stopped
+#     environment:
+#       # MYSQL_DATABASE: ${DB_DATABASE}
+#       # MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+#       # MYSQL_PASSWORD: ${DB_PASSWORD}
+#       # MYSQL_USER: ${DB_USERNAME}
+#       MYSQL_ROOT_PASSWORD: rootpass
+#       MYSQL_DATABASE: laravel
+#       MYSQL_USER: laraveluser
+#       MYSQL_PASSWORD: laravelpass
+#     ports:
+#       - "3306:3306"
+#     volumes:
+#       - dbdata:/var/lib/mysql
+#       - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
+#     env_file:
+#       - ./src/.env 
+#     networks:
+#       - laravel
+
+#   phpmyadmin:
+#     image: phpmyadmin/phpmyadmin
+#     container_name: phpmyadmin
+#     depends_on:
+#       - db
+#     environment:
+#       PMA_HOST: db
+#       MYSQL_ROOT_PASSWORD: rootpass
+#     ports:
+#       - "8081:80"  # Changed from 8080 to 8081
+#     volumes:
+#       - pgadmin_data:/var/lib/phpmyadmin  # <-- persist phpMyAdmin data here  
+#     networks:
+#     - laravel 
+
+
+
+
+#   postgres:
+#     image: postgres:15
+#     container_name: postgres
+#     environment:
+#       POSTGRES_DB: laravel_db
+#       #POSTGRES_TEST_DB: laravel_testing  # Separate DB for tests
+#       POSTGRES_USER: laravel_user
+#       POSTGRES_PASSWORD: secret
+#     volumes:
+#       - pgdata:/var/lib/postgresql/data
+#     ports:
+#       - "0.0.0.0:5432:5432"
+#     networks:
+#     - laravel   
+
+#   pgadmin:
+#     image: dpage/pgadmin4
+#     container_name: pgadmin
+#     environment:
+#       PGADMIN_DEFAULT_EMAIL: admin@admin.com
+#       PGADMIN_DEFAULT_PASSWORD: admin
+#     ports:
+#       - "0.0.0.0:8082:80"
+#     depends_on:
+#       - postgres
+#     volumes:
+#       - pgadmin_data:/var/lib/pgadmin  # <-- persist pgAdmin data here 
+#     networks:
+#     - laravel 
+
+
+#   redis:
+#     image: redis:alpine
+#     container_name: laravel_redis
+#     restart: unless-stopped
+#     ports:
+#       - "6379:6379"
+#     healthcheck:
+#       test: ["CMD", "redis-cli", "ping"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 3
+#     volumes:
+#       - redis_data:/data  
+#     networks:
+#       - laravel
+
+# networks:
+#   laravel:
+#     driver: bridge
+
+# volumes:
+#   pgadmin_data: 
+#   pgdata:
+#   dbdata:  
+#   redis_data:

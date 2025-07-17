@@ -1,0 +1,26 @@
+# # docker-compose.override.yml
+# # This file is automatically loaded by docker-compose
+
+# services:
+#   # Add an init service that runs first
+#   init:
+#     image: alpine:latest
+#     container_name: init_ip
+#     command: /bin/sh -c "echo 'HOST_IP detected and set in .env file'"
+#     volumes:
+#       - ./.env:/tmp/.env
+#     environment:
+#       - HOST_IP=${HOST_IP:-127.0.0.1}
+#     networks:
+#       - laravel
+
+#   webserver:
+#     depends_on:
+#       - init
+#       - app
+
+#   app:
+#     depends_on:
+#       - init
+#       - db
+#       - redis
