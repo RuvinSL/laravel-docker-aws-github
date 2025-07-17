@@ -1,16 +1,16 @@
 # # version: 'v5'
 
 services:
-  selenium:
-    image: selenium/standalone-chrome:latest
-    ports:
-      - "4444:4444"
-    environment:
-      - HUB_HOST=selenium
-    volumes:
-      - /dev/shm:/dev/shm
-    networks:
-      - laravel      
+  # selenium:
+  #   image: selenium/standalone-chrome:latest
+  #   ports:
+  #     - "4444:4444"
+  #   environment:
+  #     - HUB_HOST=selenium
+  #   volumes:
+  #     - /dev/shm:/dev/shm
+  #   networks:
+  #     - laravel      
 
 
   traefik:
@@ -50,12 +50,12 @@ services:
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
     depends_on:
       - redis
-      - selenium
+      # - selenium
     networks:
       - laravel
     environment:
       - HOST_IP=${HOST_IP}
-      - DUSK_DRIVER_URL=http://selenium:4444/wd/hub
+      # - DUSK_DRIVER_URL=http://selenium:4444/wd/hub
 
 
 
@@ -86,39 +86,39 @@ services:
 
 
 
-  db:
-    image: mysql:8.0
-    container_name: laravel_db
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: laravel
-      MYSQL_USER: laraveluser
-      MYSQL_PASSWORD: laravelpass
-    volumes:
-      - dbdata:/var/lib/mysql
-      - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
-    env_file:
-      - ./src/.env
-    networks:
-      - laravel
+  # db:
+  #   image: mysql:8.0
+  #   container_name: laravel_db
+  #   restart: unless-stopped
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: rootpass
+  #     MYSQL_DATABASE: laravel
+  #     MYSQL_USER: laraveluser
+  #     MYSQL_PASSWORD: laravelpass
+  #   volumes:
+  #     - dbdata:/var/lib/mysql
+  #     - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
+  #   env_file:
+  #     - ./src/.env
+  #   networks:
+  #     - laravel
 
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: phpmyadmin
-    depends_on:
-      - db
-    environment:
-      PMA_HOST: db
-      MYSQL_ROOT_PASSWORD: rootpass
-    networks:
-      - laravel
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.phpmyadmin.rule=Host(`phpmyadmin.local`) || Host(`phpmyadmin.${HOST_IP}.nip.io`)"
-      - "traefik.http.routers.phpmyadmin.entrypoints=websecure"
-      - "traefik.http.routers.phpmyadmin.tls.certresolver=leresolver"
-      - "traefik.http.services.phpmyadmin.loadbalancer.server.port=80"
+  # phpmyadmin:
+  #   image: phpmyadmin/phpmyadmin
+  #   container_name: phpmyadmin
+  #   depends_on:
+  #     - db
+  #   environment:
+  #     PMA_HOST: db
+  #     MYSQL_ROOT_PASSWORD: rootpass
+  #   networks:
+  #     - laravel
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.phpmyadmin.rule=Host(`phpmyadmin.local`) || Host(`phpmyadmin.${HOST_IP}.nip.io`)"
+  #     - "traefik.http.routers.phpmyadmin.entrypoints=websecure"
+  #     - "traefik.http.routers.phpmyadmin.tls.certresolver=leresolver"
+  #     - "traefik.http.services.phpmyadmin.loadbalancer.server.port=80"
 
 
   postgres:
